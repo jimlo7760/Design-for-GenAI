@@ -10,7 +10,7 @@ export default async function LoginPage({ searchParams }) {
     return (
         <main style={{ maxWidth: '420px', margin: '0 auto', padding: '2rem', fontFamily: 'sans-serif' }}>
             <h1 style={{ borderBottom: '2px solid #eaeaea', paddingBottom: '1rem' }}>Sign in</h1>
-            <p>Sign in with Google to see your dashboard and manage your profile.</p>
+            <p>Please sign in with your Google account to continue.</p>
 
             {error && (
                 <p role="alert" style={{ color: '#b00020' }}>

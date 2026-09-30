@@ -4,7 +4,7 @@ import { fullName } from '../lib/auth';
 
 const linkStyle = { color: '#333', textDecoration: 'none' };
 
-// The gated part of the UI: what shows here depends on whether someone is logged in.
+// Logged-out visitors only see the app name; the links and account menu appear after login.
 export default function Header({ user, profile }) {
     const name = fullName(profile) || user?.email;
 
@@ -27,7 +27,7 @@ export default function Header({ user, profile }) {
                     {user && <Link href="/dashboard" style={linkStyle}>Dashboard</Link>}
                 </nav>
 
-                {user ? (
+                {user && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <Link
                             href="/profile"
@@ -51,8 +51,6 @@ export default function Header({ user, profile }) {
                             </button>
                         </form>
                     </div>
-                ) : (
-                    <Link href="/login" style={linkStyle}>Sign in</Link>
                 )}
             </div>
         </header>

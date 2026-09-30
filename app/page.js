@@ -1,14 +1,14 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { supabase } from '../lib/supabaseClient';
-import { getCurrentUser, getProfile, isProfileComplete } from '../lib/auth';
+import { getProfile, isProfileComplete, requireUser } from '../lib/auth';
 
 export default async function Home() {
-    const user = await getCurrentUser();
+    await requireUser();
     const profile = await getProfile();
 
-    // Logged in but no name saved yet: ask for it first.
-    if (user && !isProfileComplete(profile)) redirect('/profile');
+    // No name saved yet: ask for it first.
+    if (!isProfileComplete(profile)) redirect('/profile');
 
     const { data: items, error } = await supabase
         .from('Car')
@@ -29,11 +29,7 @@ export default async function Home() {
             <h1 style={{ borderBottom: '2px solid #eaeaea', paddingBottom: '1rem' }}>Items List</h1>
 
             <p style={{ margin: '1.5rem 0 0 0', padding: '1rem', background: '#f5f7ff', border: '1px solid #e0e4ff', borderRadius: '8px' }}>
-                {user ? (
-                    <>Welcome back, {profile.first_name}! <Link href="/dashboard">Open your dashboard →</Link></>
-                ) : (
-                    <><Link href="/login">Sign in with Google</Link> to see your members-only dashboard.</>
-                )}
+                Welcome back, {profile.first_name}! <Link href="/dashboard">Open your dashboard →</Link>
             </p>
 
             {(!items || items.length === 0) ? (
