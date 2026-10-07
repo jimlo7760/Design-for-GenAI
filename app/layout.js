@@ -7,7 +7,7 @@ export default async function RootLayout({ children}){
 
     return (
         <html lang="en">
-        <head ><title>My App</title></head>
+        <head ><title>Mod Squad: AI car builds, voted by you</title></head>
         <body style={{ margin: 0 }}>
             <Header user={user} profile={profile} />
             {children}

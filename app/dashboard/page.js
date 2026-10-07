@@ -1,13 +1,21 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import Avatar from '../../components/Avatar';
+import BuildCard from '../../components/BuildCard';
+import { getBuilds } from '../../lib/builds';
 import { fullName, getProfile, isProfileComplete, requireUser } from '../../lib/auth';
 
 // Only logged-in users can see this page: requireUser() sends everyone else to /login.
+// The "Render this build" button's server action runs under this page's time limit.
+export const maxDuration = 90;
+
 export default async function DashboardPage() {
     const user = await requireUser();
     const profile = await getProfile();
     if (!isProfileComplete(profile)) redirect('/profile');
+
+    const { builds } = await getBuilds({ userId: user.id, limit: 50 });
+    const totalScore = builds.reduce((sum, build) => sum + build.score, 0);
 
     const name = fullName(profile);
     const memberSince = new Date(user.created_at).toLocaleDateString('en-US', {
@@ -41,6 +49,22 @@ export default async function DashboardPage() {
             </div>
 
             <p><Link href="/profile">Edit your profile</Link></p>
+
+            <h2 style={{ marginTop: '2rem' }}>Your builds</h2>
+            {builds.length > 0 && (
+                <p style={{ color: '#555' }}>
+                    {builds.length} {builds.length === 1 ? 'build' : 'builds'} · {totalScore} total score from the community
+                </p>
+            )}
+            {builds.length === 0 ? (
+                <p>You haven&apos;t generated anything yet. <Link href="/generate">Generate your first build →</Link></p>
+            ) : (
+                <div style={{ display: 'grid', gap: '1.25rem' }}>
+                    {builds.map((build) => (
+                        <BuildCard key={build.id} build={build} currentUserId={user.id} />
+                    ))}
+                </div>
+            )}
         </main>
     );
 }

@@ -16,8 +16,9 @@ create table if not exists public.profiles (
     created_at  timestamptz not null default now()
 );
 
--- RLS stays off (the assignment allows it), so at least keep logged-out visitors
--- out: the anon key is public, and this table holds people's names and photos.
+-- Row Level Security and this table's policies are in supabase/assignment4.sql
+-- (run that after this file). Meanwhile keep logged-out visitors out: the anon
+-- key is public, and this table holds people's names and photos.
 revoke all on public.profiles from anon;
 grant select, insert, update on public.profiles to authenticated;
 
@@ -69,10 +70,9 @@ on conflict (id) do update
 -- storage.objects always has RLS on, even though `profiles` doesn't, so uploads
 -- need explicit policies. Files live at avatars/<user id>/<file>, and each user
 -- may only write inside their own folder.
+-- (Public buckets serve files by URL with no select policy. assignment4.sql adds
+-- a "read your own folder" policy instead of letting anyone list every file.)
 drop policy if exists "Avatars are publicly readable" on storage.objects;
-create policy "Avatars are publicly readable"
-    on storage.objects for select
-    using (bucket_id = 'avatars');
 
 drop policy if exists "Users can upload to their own avatar folder" on storage.objects;
 create policy "Users can upload to their own avatar folder"

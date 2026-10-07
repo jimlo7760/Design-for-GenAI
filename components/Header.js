@@ -23,8 +23,9 @@ export default function Header({ user, profile }) {
                 }}
             >
                 <nav style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-                    <Link href="/" style={{ ...linkStyle, fontWeight: 700 }}>My App</Link>
-                    {user && <Link href="/dashboard" style={linkStyle}>Dashboard</Link>}
+                    <Link href="/" style={{ ...linkStyle, fontWeight: 700 }}>Mod Squad</Link>
+                    {user && <Link href="/generate" style={linkStyle}>Generate</Link>}
+                    {user && <Link href="/dashboard" style={linkStyle}>My builds</Link>}
                 </nav>
 
                 {user && (
