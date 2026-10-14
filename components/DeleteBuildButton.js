@@ -20,22 +20,10 @@ export default function DeleteBuildButton({ buildId, redirectTo }) {
 
     return (
         <span>
-            <button
-                type="button"
-                onClick={remove}
-                disabled={pending}
-                style={{
-                    padding: '0.3rem 0.7rem',
-                    border: '1px solid #ccc',
-                    borderRadius: '6px',
-                    background: '#fff',
-                    color: '#b00020',
-                    cursor: 'pointer',
-                }}
-            >
+            <button type="button" className="btn btn--sm btn--danger" onClick={remove} disabled={pending}>
                 {pending ? 'Deleting…' : 'Delete'}
             </button>
-            {error && <span role="alert" style={{ color: '#b00020', marginLeft: '0.5rem' }}>{error}</span>}
+            {error && <span role="alert" className="small" style={{ color: 'var(--down)', marginLeft: '0.5rem' }}>{error}</span>}
         </span>
     );
 }

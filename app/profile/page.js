@@ -1,6 +1,8 @@
 import { getProfile, isProfileComplete, requireUser } from '../../lib/auth';
 import ProfileForm from './ProfileForm';
 
+export const metadata = { title: 'Your profile' };
+
 // Google shares the user's name with us; use it to pre-fill the form.
 function suggestNames(user) {
     const meta = user.user_metadata ?? {};
@@ -16,29 +18,25 @@ export default async function ProfilePage() {
     const profile = await getProfile();
 
     return (
-        <main style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem', fontFamily: 'sans-serif' }}>
-            <h1 style={{ borderBottom: '2px solid #eaeaea', paddingBottom: '1rem' }}>Your profile</h1>
+        <div className="page">
+            <div className="container stack">
+                <div className="page-head" style={{ marginBottom: 0 }}>
+                    <h1>Your profile</h1>
+                </div>
 
-            {!isProfileComplete(profile) && (
-                <p
-                    style={{
-                        margin: '1.5rem 0 0 0',
-                        padding: '1rem',
-                        background: '#fff8e1',
-                        border: '1px solid #ffe082',
-                        borderRadius: '8px',
-                    }}
-                >
-                    <strong>Welcome!</strong> Please add your first and last name to finish setting up your account.
-                </p>
-            )}
+                {!isProfileComplete(profile) && (
+                    <p className="notice">
+                        <strong>Welcome to Mod Squad!</strong> Add your first and last name to finish setting up. It&apos;s shown next to the builds you make.
+                    </p>
+                )}
 
-            <ProfileForm
-                userId={user.id}
-                email={user.email}
-                profile={profile}
-                suggestedNames={suggestNames(user)}
-            />
-        </main>
+                <ProfileForm
+                    userId={user.id}
+                    email={user.email}
+                    profile={profile}
+                    suggestedNames={suggestNames(user)}
+                />
+            </div>
+        </div>
     );
 }

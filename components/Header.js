@@ -1,55 +1,30 @@
 import Link from 'next/link';
 import Avatar from './Avatar';
+import NavLinks from './NavLinks';
 import { fullName } from '../lib/auth';
-
-const linkStyle = { color: '#333', textDecoration: 'none' };
 
 // Logged-out visitors only see the app name; the links and account menu appear after login.
 export default function Header({ user, profile }) {
     const name = fullName(profile) || user?.email;
 
     return (
-        <header style={{ borderBottom: '1px solid #eaeaea', fontFamily: 'sans-serif' }}>
-            <div
-                style={{
-                    maxWidth: '800px',
-                    margin: '0 auto',
-                    padding: '0.75rem 2rem',
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '0.75rem',
-                }}
-            >
-                <nav style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-                    <Link href="/" style={{ ...linkStyle, fontWeight: 700 }}>Mod Squad</Link>
-                    {user && <Link href="/generate" style={linkStyle}>Generate</Link>}
-                    {user && <Link href="/dashboard" style={linkStyle}>My builds</Link>}
-                </nav>
+        <header className="site-header">
+            <div className="container site-header__inner">
+                <Link href="/" className="brand">
+                    <span className="brand__mark" aria-hidden="true">M</span>
+                    Mod Squad
+                </Link>
+
+                {user && <NavLinks />}
 
                 {user && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <Link
-                            href="/profile"
-                            style={{ ...linkStyle, display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                        >
+                    <div className="user-menu">
+                        <Link href="/profile" className="user-menu__profile" aria-label={`Your profile (${name})`}>
                             <Avatar url={profile?.avatar_url} name={name} size={32} />
-                            <span>{name}</span>
+                            <span className="user-menu__name">{name}</span>
                         </Link>
                         <form action="/auth/signout" method="post">
-                            <button
-                                type="submit"
-                                style={{
-                                    padding: '0.35rem 0.75rem',
-                                    border: '1px solid #ccc',
-                                    borderRadius: '6px',
-                                    background: '#fff',
-                                    cursor: 'pointer',
-                                }}
-                            >
-                                Sign out
-                            </button>
+                            <button type="submit" className="btn btn--sm btn--header">Sign out</button>
                         </form>
                     </div>
                 )}

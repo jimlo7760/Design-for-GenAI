@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import BuildCard from '../../../components/BuildCard';
+import ShareButton from '../../../components/ShareButton';
 import { getBuilds } from '../../../lib/builds';
 import { getProfile, isProfileComplete, requireUser } from '../../../lib/auth';
 
@@ -21,12 +22,17 @@ export default async function BuildPage({ params }) {
     if (builds.length === 0) notFound();
 
     return (
-        <main style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem', fontFamily: 'sans-serif' }}>
-            <p style={{ margin: '0 0 1rem 0' }}><Link href="/">← All builds</Link></p>
-            <BuildCard build={builds[0]} currentUserId={user.id} detailed />
-            <p style={{ color: '#777', fontSize: '0.9rem' }}>
-                Share this page&apos;s link to get votes. Friends need to sign in with Google to vote.
-            </p>
-        </main>
+        <div className="page">
+            <div className="container stack">
+                <div className="row" style={{ justifyContent: 'space-between' }}>
+                    <Link href="/" className="btn btn--sm">← All builds</Link>
+                    <ShareButton title={builds[0].title} />
+                </div>
+                <BuildCard build={builds[0]} currentUserId={user.id} detailed />
+                <p className="muted small">
+                    Share this page&apos;s link to get votes. Friends need to sign in with Google to vote.
+                </p>
+            </div>
+        </div>
     );
 }

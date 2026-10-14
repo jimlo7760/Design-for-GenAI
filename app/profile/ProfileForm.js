@@ -14,27 +14,14 @@ const AVATAR_EXTENSIONS = {
     'image/gif': 'gif',
 };
 
-const cardStyle = {
-    border: '1px solid #e0e0e0',
-    borderRadius: '8px',
-    padding: '1.25rem',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-};
-const inputStyle = {
-    display: 'block',
-    width: '100%',
-    boxSizing: 'border-box',
-    marginTop: '0.25rem',
-    padding: '0.5rem',
-    fontSize: '1rem',
-    border: '1px solid #ccc',
-    borderRadius: '6px',
-};
-
 function Message({ message }) {
     if (!message) return null;
     return (
-        <p role={message.type === 'error' ? 'alert' : 'status'} style={{ color: message.type === 'error' ? '#b00020' : '#1b5e20' }}>
+        <p
+            role={message.type === 'error' ? 'alert' : 'status'}
+            className={message.type === 'error' ? 'alert' : 'success'}
+            style={{ marginTop: '1rem' }}
+        >
             {message.text}
         </p>
     );
@@ -133,12 +120,12 @@ export default function ProfileForm({ userId, email, profile, suggestedNames }) 
     }
 
     return (
-        <div style={{ display: 'grid', gap: '1.5rem', marginTop: '1.5rem' }}>
-            <section style={cardStyle}>
-                <h2 style={{ margin: '0 0 1rem 0', fontSize: '1.25rem' }}>Photo</h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+        <div className="stack">
+            <section className="card">
+                <h2>Photo</h2>
+                <div className="row" style={{ gap: '1rem' }}>
                     <Avatar url={avatarUrl} name={`${firstName} ${lastName}`} size={96} />
-                    <div>
+                    <div className="field">
                         <label htmlFor="photo">Upload a photo</label>
                         <input
                             id="photo"
@@ -146,9 +133,9 @@ export default function ProfileForm({ userId, email, profile, suggestedNames }) 
                             accept="image/jpeg,image/png,image/webp,image/gif"
                             onChange={uploadPhoto}
                             disabled={uploading}
-                            style={{ display: 'block', marginTop: '0.25rem' }}
+                            aria-describedby="avatar-hint"
                         />
-                        <p style={{ margin: '0.5rem 0 0 0', color: '#555', fontSize: '0.9rem' }}>
+                        <p id="avatar-hint" className="hint">
                             {uploading ? 'Uploading…' : 'JPG, PNG, WebP or GIF, up to 5 MB.'}
                         </p>
                     </div>
@@ -156,53 +143,48 @@ export default function ProfileForm({ userId, email, profile, suggestedNames }) 
                 <Message message={photoMessage} />
             </section>
 
-            <form onSubmit={saveNames} style={cardStyle}>
-                <h2 style={{ margin: '0 0 1rem 0', fontSize: '1.25rem' }}>Name</h2>
-                <p style={{ margin: '0 0 1rem 0', color: '#555' }}>Signed in as {email}</p>
+            <form onSubmit={saveNames} className="card form">
+                <div>
+                    <h2>Name</h2>
+                    <p className="muted small" style={{ marginTop: '0.35rem' }}>Signed in as {email}</p>
+                </div>
 
-                <label htmlFor="first-name">First name</label>
-                <input
-                    id="first-name"
-                    value={firstName}
-                    onChange={(event) => setFirstName(event.target.value)}
-                    autoComplete="given-name"
-                    required
-                    style={inputStyle}
-                />
+                <div className="grid-2">
+                    <div className="field">
+                        <label htmlFor="first-name">First name</label>
+                        <input
+                            id="first-name"
+                            className="input"
+                            value={firstName}
+                            onChange={(event) => setFirstName(event.target.value)}
+                            autoComplete="given-name"
+                            required
+                        />
+                    </div>
 
-                <div style={{ height: '1rem' }} />
+                    <div className="field">
+                        <label htmlFor="last-name">Last name</label>
+                        <input
+                            id="last-name"
+                            className="input"
+                            value={lastName}
+                            onChange={(event) => setLastName(event.target.value)}
+                            autoComplete="family-name"
+                            required
+                        />
+                    </div>
+                </div>
 
-                <label htmlFor="last-name">Last name</label>
-                <input
-                    id="last-name"
-                    value={lastName}
-                    onChange={(event) => setLastName(event.target.value)}
-                    autoComplete="family-name"
-                    required
-                    style={inputStyle}
-                />
-
-                <button
-                    type="submit"
-                    disabled={saving}
-                    style={{
-                        marginTop: '1.25rem',
-                        padding: '0.6rem 1.25rem',
-                        fontSize: '1rem',
-                        color: '#fff',
-                        background: '#3f51b5',
-                        border: 'none',
-                        borderRadius: '6px',
-                        cursor: saving ? 'default' : 'pointer',
-                    }}
-                >
-                    {saving ? 'Saving…' : 'Save'}
-                </button>
+                <div className="row">
+                    <button type="submit" className="btn btn--primary" disabled={saving}>
+                        {saving ? 'Saving…' : 'Save'}
+                    </button>
+                    {nameMessage?.type === 'success' && (
+                        <Link href="/" className="btn">Start voting →</Link>
+                    )}
+                </div>
 
                 <Message message={nameMessage} />
-                {nameMessage?.type === 'success' && (
-                    <p><Link href="/dashboard">Go to your dashboard →</Link></p>
-                )}
             </form>
         </div>
     );

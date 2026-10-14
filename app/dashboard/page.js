@@ -5,6 +5,8 @@ import BuildCard from '../../components/BuildCard';
 import { getBuilds } from '../../lib/builds';
 import { fullName, getProfile, isProfileComplete, requireUser } from '../../lib/auth';
 
+export const metadata = { title: 'My builds' };
+
 // Only logged-in users can see this page: requireUser() sends everyone else to /login.
 // The "Render this build" button's server action runs under this page's time limit.
 export const maxDuration = 90;
@@ -16,6 +18,7 @@ export default async function DashboardPage() {
 
     const { builds } = await getBuilds({ userId: user.id, limit: 50 });
     const totalScore = builds.reduce((sum, build) => sum + build.score, 0);
+    const totalUpvotes = builds.reduce((sum, build) => sum + build.upvotes, 0);
 
     const name = fullName(profile);
     const memberSince = new Date(user.created_at).toLocaleDateString('en-US', {
@@ -24,47 +27,51 @@ export default async function DashboardPage() {
     });
 
     return (
-        <main style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem', fontFamily: 'sans-serif' }}>
-            <h1 style={{ borderBottom: '2px solid #eaeaea', paddingBottom: '1rem' }}>Dashboard</h1>
-            <p>Welcome back, {profile.first_name}! Only signed-in users can see this page.</p>
-
-            <div
-                style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '1rem',
-                    marginTop: '1.5rem',
-                    border: '1px solid #e0e0e0',
-                    borderRadius: '8px',
-                    padding: '1.25rem',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                }}
-            >
-                <Avatar url={profile.avatar_url} name={name} size={64} />
-                <div>
-                    <h2 style={{ margin: '0 0 0.25rem 0', fontSize: '1.25rem' }}>{name}</h2>
-                    <p style={{ margin: 0, color: '#555' }}>{user.email}</p>
-                    <p style={{ margin: 0, color: '#555' }}>Member since {memberSince}</p>
+        <div className="page">
+            <div className="container stack">
+                <div className="card profile-card">
+                    <Avatar url={profile.avatar_url} name={name} size={64} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <h1 style={{ fontSize: '1.5rem' }}>Welcome back, {profile.first_name}!</h1>
+                        <p className="muted small">{user.email} · Member since {memberSince}</p>
+                    </div>
+                    <Link href="/profile" className="btn btn--sm">Edit profile</Link>
                 </div>
+
+                <div className="stats" aria-label="Your stats">
+                    <div className="stat">
+                        <div className="stat__value">{builds.length}</div>
+                        <div className="stat__label">{builds.length === 1 ? 'Build' : 'Builds'}</div>
+                    </div>
+                    <div className="stat">
+                        <div className="stat__value">{totalUpvotes}</div>
+                        <div className="stat__label">Upvotes</div>
+                    </div>
+                    <div className="stat">
+                        <div className="stat__value">{totalScore}</div>
+                        <div className="stat__label">Total score</div>
+                    </div>
+                </div>
+
+                <div className="row" style={{ justifyContent: 'space-between' }}>
+                    <h2>Your builds</h2>
+                    {builds.length > 0 && <Link href="/generate" className="btn btn--primary btn--sm">+ New build</Link>}
+                </div>
+
+                {builds.length === 0 ? (
+                    <div className="empty">
+                        <h2>No builds yet</h2>
+                        <p>Your builds, and how the community votes on them, will show up here.</p>
+                        <Link href="/generate" className="btn btn--primary">Generate your first build →</Link>
+                    </div>
+                ) : (
+                    <div className="stack">
+                        {builds.map((build) => (
+                            <BuildCard key={build.id} build={build} currentUserId={user.id} />
+                        ))}
+                    </div>
+                )}
             </div>
-
-            <p><Link href="/profile">Edit your profile</Link></p>
-
-            <h2 style={{ marginTop: '2rem' }}>Your builds</h2>
-            {builds.length > 0 && (
-                <p style={{ color: '#555' }}>
-                    {builds.length} {builds.length === 1 ? 'build' : 'builds'} · {totalScore} total score from the community
-                </p>
-            )}
-            {builds.length === 0 ? (
-                <p>You haven&apos;t generated anything yet. <Link href="/generate">Generate your first build →</Link></p>
-            ) : (
-                <div style={{ display: 'grid', gap: '1.25rem' }}>
-                    {builds.map((build) => (
-                        <BuildCard key={build.id} build={build} currentUserId={user.id} />
-                    ))}
-                </div>
-            )}
-        </main>
+        </div>
     );
 }

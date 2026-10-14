@@ -26,54 +26,65 @@ export default async function Home({ searchParams }) {
     const { builds, error } = await getBuilds({ sort });
     const challenge = todaysChallenge();
 
+    // Builds on this page that the user could still vote on.
+    const waiting = builds.filter((build) => build.user_id !== user.id && build.myVote === 0).length;
+
     return (
-        <main style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem', fontFamily: 'sans-serif' }}>
-            <h1 style={{ borderBottom: '2px solid #eaeaea', paddingBottom: '1rem' }}>Mod Squad</h1>
-            <p style={{ color: '#555' }}>
-                Pick a car, describe a vibe, and the AI designs the build. Then the community votes on which ones deserve to exist.
-            </p>
-
-            <div style={{ margin: '1.5rem 0 0 0', padding: '1rem', background: '#f5f7ff', border: '1px solid #e0e4ff', borderRadius: '8px' }}>
-                <strong>Today&apos;s challenge:</strong> {challenge}
-                <div style={{ marginTop: '0.5rem' }}>
-                    <Link href={`/generate?vibe=${encodeURIComponent(challenge)}`}>Take the challenge →</Link>
+        <div className="page">
+            <div className="container stack">
+                <div className="page-head" style={{ marginBottom: 0 }}>
+                    <div>
+                        <h1>Vote on AI-designed car builds</h1>
+                        <p>
+                            Pick a car, describe a vibe, and the AI designs the build. Then the community votes on which ones deserve to exist.
+                        </p>
+                    </div>
                 </div>
-            </div>
 
-            <nav aria-label="Sort builds" style={{ display: 'flex', gap: '0.5rem', margin: '1.5rem 0 0 0' }}>
-                {SORTS.map((option) => (
-                    <Link
-                        key={option.key}
-                        href={option.key === 'new' ? '/' : `/?sort=${option.key}`}
-                        aria-current={sort === option.key ? 'page' : undefined}
-                        style={{
-                            padding: '0.35rem 0.85rem',
-                            borderRadius: '999px',
-                            textDecoration: 'none',
-                            border: '1px solid #3f51b5',
-                            background: sort === option.key ? '#3f51b5' : '#fff',
-                            color: sort === option.key ? '#fff' : '#3f51b5',
-                        }}
-                    >
-                        {option.label}
+                <div className="banner">
+                    <div>
+                        <p className="banner__label">Today&apos;s challenge</p>
+                        <p className="banner__text">{challenge}</p>
+                    </div>
+                    <Link href={`/generate?vibe=${encodeURIComponent(challenge)}`} className="btn btn--primary btn--sm">
+                        Take the challenge →
                     </Link>
-                ))}
-            </nav>
-
-            {error ? (
-                <p role="alert" style={{ color: '#b00020' }}>Could not load builds: {error}</p>
-            ) : builds.length === 0 ? (
-                <p style={{ marginTop: '1.5rem' }}>
-                    {sort === 'today' ? 'No builds in the last 24 hours. ' : 'No builds yet. '}
-                    <Link href="/generate">Be the first to generate one →</Link>
-                </p>
-            ) : (
-                <div style={{ display: 'grid', gap: '1.25rem', marginTop: '1.5rem' }}>
-                    {builds.map((build) => (
-                        <BuildCard key={build.id} build={build} currentUserId={user.id} />
-                    ))}
                 </div>
-            )}
-        </main>
+
+                <div className="row" style={{ justifyContent: 'space-between' }}>
+                    <nav aria-label="Sort builds" className="tabs">
+                        {SORTS.map((option) => (
+                            <Link
+                                key={option.key}
+                                href={option.key === 'new' ? '/' : `/?sort=${option.key}`}
+                                aria-current={sort === option.key ? 'page' : undefined}
+                                className="tab"
+                            >
+                                {option.label}
+                            </Link>
+                        ))}
+                    </nav>
+                    <Link href="/judge" className="btn btn--sm">
+                        Judge mode{waiting > 0 && <span className="pill pill--accent">{waiting} to rate</span>}
+                    </Link>
+                </div>
+
+                {error ? (
+                    <p role="alert" className="alert">Could not load builds: {error}</p>
+                ) : builds.length === 0 ? (
+                    <div className="empty">
+                        <h2>{sort === 'today' ? 'Nothing in the last 24 hours' : 'No builds yet'}</h2>
+                        <p>{sort === 'today' ? 'Be the first to put a build on today\'s board.' : 'Be the first to design one.'}</p>
+                        <Link href="/generate" className="btn btn--primary">Generate a build →</Link>
+                    </div>
+                ) : (
+                    <div className="stack">
+                        {builds.map((build) => (
+                            <BuildCard key={build.id} build={build} currentUserId={user.id} />
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
     );
 }

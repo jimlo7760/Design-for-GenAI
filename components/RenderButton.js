@@ -20,27 +20,17 @@ export default function RenderButton({ buildId }) {
     }
 
     return (
-        <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: '#f5f7ff', border: '1px solid #e0e4ff', borderRadius: '8px', fontSize: '0.9rem' }}>
-            <button
-                type="button"
-                onClick={render}
-                disabled={pending}
-                style={{
-                    padding: '0.45rem 1rem',
-                    fontSize: '0.95rem',
-                    color: '#fff',
-                    background: '#3f51b5',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: pending ? 'default' : 'pointer',
-                }}
-            >
-                {pending ? 'Rendering… (about 20s)' : 'Render this build with AI'}
-            </button>
-            <span style={{ marginLeft: '0.75rem', color: '#555' }}>
-                Shows your mods on the car. One render per build, 5 per day.
-            </span>
-            {error && <p role="alert" style={{ color: '#b00020', margin: '0.5rem 0 0 0' }}>{error}</p>}
+        <div className="render-box">
+            <div className="row">
+                <button type="button" className="btn btn--primary btn--sm" onClick={render} disabled={pending}>
+                    {pending ? 'Rendering… (about 20s)' : '✨ Render this build with AI'}
+                </button>
+                <span className="muted small">
+                    Shows your mods on the car. One render per build, 5 per day.
+                </span>
+            </div>
+            {pending && <p className="muted small" role="status" style={{ marginTop: '0.5rem' }}>Hang tight: the AI is editing your car&apos;s photo.</p>}
+            {error && <p role="alert" className="alert" style={{ marginTop: '0.5rem' }}>{error}</p>}
         </div>
     );
 }

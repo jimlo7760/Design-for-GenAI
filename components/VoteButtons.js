@@ -3,16 +3,6 @@
 import { useState, useTransition } from 'react';
 import { castVote } from '../app/actions';
 
-const buttonStyle = (active, color) => ({
-    padding: '0.4rem 0.8rem',
-    fontSize: '1rem',
-    border: `1px solid ${active ? color : '#ccc'}`,
-    borderRadius: '6px',
-    background: active ? color : '#fff',
-    color: active ? '#fff' : '#333',
-    cursor: 'pointer',
-});
-
 // Clicking your current vote again takes it back. The numbers update instantly and
 // are replaced by the server's real totals as soon as they arrive.
 export default function VoteButtons({ buildId, upvotes, downvotes, myVote, isOwner }) {
@@ -44,34 +34,48 @@ export default function VoteButtons({ buildId, upvotes, downvotes, myVote, isOwn
 
     const score = state.upvotes - state.downvotes;
 
+    // Your own build: you can see how it is doing, but not vote on it.
+    if (isOwner) {
+        return (
+            <div className="votes__own" title="You can't vote on your own build">
+                <span className="pill pill--accent">Your build</span>
+                <span aria-label={`${state.upvotes} upvotes and ${state.downvotes} downvotes`}>
+                    ▲ {state.upvotes} · ▼ {state.downvotes}
+                </span>
+            </div>
+        );
+    }
+
     return (
         <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <button
-                    type="button"
-                    onClick={() => vote(1)}
-                    disabled={isOwner || pending}
-                    aria-pressed={state.myVote === 1}
-                    aria-label="Upvote"
-                    title={isOwner ? "You can't vote on your own build" : 'Upvote'}
-                    style={{ ...buttonStyle(state.myVote === 1, '#2e7d32'), opacity: isOwner ? 0.4 : 1 }}
-                >
-                    ▲ {state.upvotes}
-                </button>
-                <button
-                    type="button"
-                    onClick={() => vote(-1)}
-                    disabled={isOwner || pending}
-                    aria-pressed={state.myVote === -1}
-                    aria-label="Downvote"
-                    title={isOwner ? "You can't vote on your own build" : 'Downvote'}
-                    style={{ ...buttonStyle(state.myVote === -1, '#c62828'), opacity: isOwner ? 0.4 : 1 }}
-                >
-                    ▼ {state.downvotes}
-                </button>
-                <span style={{ color: '#555', marginLeft: '0.25rem' }}>Score {score}</span>
+            <div className="votes">
+                <div className="votes__group" role="group" aria-label="Vote on this build">
+                    <button
+                        type="button"
+                        className="vote vote--up"
+                        onClick={() => vote(1)}
+                        disabled={pending}
+                        aria-pressed={state.myVote === 1}
+                        aria-label={`Upvote (${state.upvotes})`}
+                        title={state.myVote === 1 ? 'Take back your upvote' : 'Upvote'}
+                    >
+                        ▲ {state.upvotes}
+                    </button>
+                    <button
+                        type="button"
+                        className="vote vote--down"
+                        onClick={() => vote(-1)}
+                        disabled={pending}
+                        aria-pressed={state.myVote === -1}
+                        aria-label={`Downvote (${state.downvotes})`}
+                        title={state.myVote === -1 ? 'Take back your downvote' : 'Downvote'}
+                    >
+                        ▼ {state.downvotes}
+                    </button>
+                </div>
+                <span className="score">Score <strong>{score}</strong></span>
             </div>
-            {error && <p role="alert" style={{ color: '#b00020', margin: '0.5rem 0 0 0' }}>{error}</p>}
+            {error && <p role="alert" className="alert" style={{ marginTop: '0.5rem' }}>{error}</p>}
         </div>
     );
 }
