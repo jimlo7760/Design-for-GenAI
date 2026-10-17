@@ -24,7 +24,7 @@ export default async function RootLayout({ children }) {
                 </main>
                 <footer className="site-footer">
                     <div className="container">
-                        Mod Squad · Builds designed by Google Gemini · Stock photos from Wikimedia Commons
+                        Mod Squad · Builds designed by Google Gemini · Stock photos from Wikimedia Commons · Car logos belong to their owners
                     </div>
                 </footer>
             </body>

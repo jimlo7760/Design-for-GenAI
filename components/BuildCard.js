@@ -2,7 +2,10 @@ import Link from 'next/link';
 import Avatar from './Avatar';
 import VoteButtons from './VoteButtons';
 import DeleteBuildButton from './DeleteBuildButton';
+import ModEditor from './ModEditor';
+import ModItem from './ModItem';
 import RenderButton from './RenderButton';
+import { addMod, removeMod, resetMods } from '../app/actions';
 import { fullName } from '../lib/auth';
 
 function timeAgo(iso) {
@@ -28,6 +31,13 @@ export default function BuildCard({ build, currentUserId, detailed = false, deck
     const badge = build.render_url ? 'AI render of this build' : build.photo_url ? 'Photo of the base car' : 'Stock photo of the base car';
     const showCredit = build.render_url || (!build.photo_url && build.image_url);
     const mods = full ? build.mods : build.mods.slice(0, 3);
+    // Only the owner, on the build's own page, can change the parts (the Judge deck stays read-only).
+    // mods_editable is false until supabase/assignment4_edit.sql has been run.
+    const editable = isOwner && detailed && !deck && build.mods_editable !== false;
+    // The picture was made from the list as it was then; later edits are not in it.
+    const renderOutdated = Boolean(
+        build.render_url && build.mods_edited_at && build.rendered_at && new Date(build.mods_edited_at) > new Date(build.rendered_at)
+    );
 
     return (
         <article className={full ? 'card build build--full' : 'card build'}>
@@ -49,6 +59,7 @@ export default function BuildCard({ build, currentUserId, detailed = false, deck
             {showCredit && (
                 <p className="build__credit">
                     {build.render_url ? 'AI render of this build' : 'Not the finished build'}
+                    {renderOutdated && ' (made before the parts list was edited)'}
                     {build.image_url && !build.photo_url && (
                         <>
                             {' '}· {build.render_url ? 'based on a photo by' : 'Photo:'} {build.image_credit} · {build.image_license} ·{' '}
@@ -74,22 +85,33 @@ export default function BuildCard({ build, currentUserId, detailed = false, deck
                 </h2>
                 <p className="build__tagline">{build.tagline}</p>
 
-                <ul className="mods">
-                    {mods.map((mod, index) => (
-                        <li key={index} className="mod">
-                            <div className="mod__head">
-                                <span className="mod__part">{mod.part}</span>
-                                <span className="pill">{mod.category}</span>
-                            </div>
-                            {full && <div className="mod__detail">{mod.detail}</div>}
-                        </li>
-                    ))}
-                    {!full && build.mods.length > 3 && (
-                        <li className="mods__more">
-                            <Link href={`/builds/${build.id}`}>+ {build.mods.length - 3} more mods →</Link>
-                        </li>
-                    )}
-                </ul>
+                {editable ? (
+                    <ModEditor
+                        buildId={build.id}
+                        car={build.car_name}
+                        mods={build.mods}
+                        edited={Boolean(build.mods_edited_at)}
+                        onRemove={removeMod}
+                        onAdd={addMod}
+                        onReset={resetMods}
+                    />
+                ) : (
+                    <>
+                        <ul className="mods">
+                            {mods.map((mod, index) => (
+                                <ModItem key={index} mod={mod} full={full} />
+                            ))}
+                            {!full && build.mods.length > 3 && (
+                                <li className="mods__more">
+                                    <Link href={`/builds/${build.id}`}>+ {build.mods.length - 3} more mods →</Link>
+                                </li>
+                            )}
+                        </ul>
+                        {full && build.mods_edited_at && (
+                            <p className="mods__note">The owner has edited this parts list since the AI wrote it.</p>
+                        )}
+                    </>
+                )}
 
                 {full && (
                     <p className="build__vibe">Vibe requested: “{build.vibe}”</p>

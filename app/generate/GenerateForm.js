@@ -4,11 +4,13 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '../../lib/supabase/client';
 import { createBuild } from '../actions';
+import BrandPicker, { OTHER_BRAND as OTHER } from '../../components/BrandPicker';
+import CarPreview from '../../components/CarPreview';
+import { chassisYears } from '../../lib/carYears';
 import { VIBE_IDEAS } from '../../lib/challenges';
 
 const MAX_PHOTO_BYTES = 4 * 1024 * 1024;
 const PHOTO_EXTENSIONS = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
-const OTHER = '__other__';
 
 // Shown in turn while the AI works, so the wait feels like progress.
 const PROGRESS_MESSAGES = [
@@ -24,6 +26,8 @@ const PROGRESS_MESSAGES = [
 export default function GenerateForm({ userId, catalog, defaultVibe }) {
     const router = useRouter();
     const photoInput = useRef(null);
+    const nextStep = useRef(null); // the field that follows the brand: Model, or the typed-in car
+    const scrollToNextStep = useRef(false);
     const [brand, setBrand] = useState('');
     const [model, setModel] = useState('');
     const [chassis, setChassis] = useState('');
@@ -58,11 +62,21 @@ export default function GenerateForm({ userId, catalog, defaultVibe }) {
     }, [status]);
 
     // Changing a choice clears the ones that depend on it.
-    function chooseBrand(value) {
+    function chooseBrand(value, byPointer = false) {
         setBrand(value);
         setModel('');
         setChassis('');
+        scrollToNextStep.current = byPointer;
     }
+
+    // After tapping a logo, the next field can sit below the fold on a phone: bring it into
+    // view once it has rendered. Arrow-key changes don't scroll, so the keyboard isn't yanked away.
+    useEffect(() => {
+        if (!scrollToNextStep.current) return;
+        scrollToNextStep.current = false;
+        const motion = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+        nextStep.current?.scrollIntoView({ block: 'nearest', behavior: motion });
+    }, [brand]);
     function chooseModel(value) {
         setModel(value);
         setChassis('');
@@ -130,17 +144,10 @@ export default function GenerateForm({ userId, catalog, defaultVibe }) {
             <section className="form__section" aria-labelledby="step-car">
                 <h2 id="step-car" className="form__heading"><span className="form__num">1</span> Pick the car</h2>
 
-                <div className="field">
-                    <label htmlFor="brand">Brand</label>
-                    <select id="brand" className="input" value={brand} onChange={(event) => chooseBrand(event.target.value)} required disabled={busy}>
-                        <option value="" disabled>Select a brand…</option>
-                        {Object.keys(catalog).map((name) => <option key={name} value={name}>{name}</option>)}
-                        <option value={OTHER}>Other (type it in)…</option>
-                    </select>
-                </div>
+                <BrandPicker brands={Object.keys(catalog)} value={brand} onChange={chooseBrand} disabled={busy} />
 
                 {isOther ? (
-                    <div className="field">
+                    <div ref={nextStep} className="field form__next">
                         <label htmlFor="other-car">Car (make, model and chassis if you know it)</label>
                         <input
                             id="other-car"
@@ -154,7 +161,7 @@ export default function GenerateForm({ userId, catalog, defaultVibe }) {
                         />
                     </div>
                 ) : (
-                    <div className="grid-2">
+                    <div ref={nextStep} className="grid-2 form__next">
                         <div className="field">
                             <label htmlFor="model">Model</label>
                             <select
@@ -182,10 +189,25 @@ export default function GenerateForm({ userId, catalog, defaultVibe }) {
                                 <option value="">
                                     {!model ? 'Choose a model first' : chassisOptions.length === 0 ? 'No chassis list for this model' : 'Not sure / any'}
                                 </option>
-                                {chassisOptions.map((code) => <option key={code} value={code}>{code}</option>)}
+                                {chassisOptions.map((code) => {
+                                    // Most people know their car by year, not by chassis code.
+                                    const years = chassisYears(brand, model, code);
+                                    return <option key={code} value={code}>{years ? `${code} · ${years}` : code}</option>;
+                                })}
                             </select>
                         </div>
                     </div>
+                )}
+
+                {!isOther && model && (
+                    <CarPreview
+                        brand={brand}
+                        model={model}
+                        chassis={chassis}
+                        years={chassisYears(brand, model, chassis)}
+                        exact={chassis !== '' || chassisOptions.length === 0}
+                        chassisCodes={chassisOptions}
+                    />
                 )}
             </section>
 
@@ -262,7 +284,7 @@ export default function GenerateForm({ userId, catalog, defaultVibe }) {
             ) : (
                 <div className="stack-sm">
                     <button type="submit" className="btn btn--primary btn--lg btn--block">Generate build</button>
-                    <p className="hint" style={{ textAlign: 'center' }}>Everyone can then vote on it. You can make up to 10 builds a day.</p>
+                    <p className="hint" style={{ textAlign: 'center' }}>Everyone can then vote on it, and you can swap any part afterwards. You can make up to 10 builds a day.</p>
                 </div>
             )}
 

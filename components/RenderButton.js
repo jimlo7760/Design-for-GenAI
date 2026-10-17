@@ -26,7 +26,7 @@ export default function RenderButton({ buildId }) {
                     {pending ? 'Rendering… (about 20s)' : '✨ Render this build with AI'}
                 </button>
                 <span className="muted small">
-                    Shows your mods on the car. One render per build, 5 per day.
+                    Shows your parts on the car, so finish editing the list first. One render per build, 5 per day.
                 </span>
             </div>
             {pending && <p className="muted small" role="status" style={{ marginTop: '0.5rem' }}>Hang tight: the AI is editing your car&apos;s photo.</p>}

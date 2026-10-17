@@ -8,8 +8,9 @@
 -- which also wipes the column grants made by assignment4_photos.sql and
 -- assignment4_render.sql. If you re-run THIS file, re-run those two after it, in
 -- order, or saving a build fails with "permission denied for table builds".
--- Easiest: paste all three together:
---   cat supabase/assignment4.sql supabase/assignment4_photos.sql supabase/assignment4_render.sql | pbcopy
+-- Easiest: paste all four together (the last one, assignment4_edit.sql, uses functions instead of
+-- column grants, so it survives a re-run of this file, but it is safe to paste again):
+--   cat supabase/assignment4.sql supabase/assignment4_photos.sql supabase/assignment4_render.sql supabase/assignment4_edit.sql | pbcopy
 --
 -- Security model, strictest that still lets the app work:
 --   * Every table has RLS on. Logged-out visitors (the `anon` role) get nothing.

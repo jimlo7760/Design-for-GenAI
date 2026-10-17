@@ -4,11 +4,15 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '../lib/supabase/server';
 import { getCurrentUser, getProfile, isProfileComplete } from '../lib/auth';
 import { generateBuild } from '../lib/ai';
+import { withDatabaseCars } from '../lib/carCatalog';
 import { findCarPhoto } from '../lib/carPhoto';
+import { examplePhoto, pinnedPhoto } from '../lib/carPhotos';
+import { MAX_MODS, cleanMod, isUuid, partKey, shareOfTotal, totalWith, totalWithout } from '../lib/mods';
 import { buildRenderPrompt, loadReferenceImage, renderImage } from '../lib/render';
 
 const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_PHOTO_BYTES = 4 * 1024 * 1024;
+const BUILD_PHOTO_WIDTH = 960; // the build page shows the car photo large; the Generate preview uses 500
 
 // Server Actions can be POSTed to directly, so every one re-checks who is calling.
 // RLS in the database is the second lock behind this one.
@@ -17,6 +21,17 @@ async function requireMember() {
     if (!user) throw new Error('Please sign in first.');
     if (!isProfileComplete(await getProfile())) throw new Error('Please finish your profile first.');
     return user;
+}
+
+// The photo the Generate page's preview card showed for this car (lib/carPhotos.js), at the size a
+// build shows: a photo, null when we checked and have none, or undefined when the car was never
+// checked (for example one added to the Car table). Same rule as CarPreview: a model with
+// generations and no chassis chosen is shown by its newest generation.
+function vettedPhoto(brand, model, chassis) {
+    const codes = withDatabaseCars()[brand]?.[model];
+    const chassisCodes = Array.isArray(codes) ? codes : [];
+    if (chassis || chassisCodes.length === 0) return pinnedPhoto(brand, model, chassis, BUILD_PHOTO_WIDTH);
+    return examplePhoto(brand, model, chassisCodes, BUILD_PHOTO_WIDTH)?.photo;
 }
 
 // Generates a build with the AI and saves it. Returns { id } or { error }.
@@ -70,15 +85,17 @@ export async function createBuild({ brand, model, chassis, vibe, photoPath }) {
         .gte('created_at', since);
     if ((count ?? 0) >= 10) return { error: 'Daily limit reached: 10 builds per 24 hours. Come back tomorrow!' };
 
-    // If the user didn't upload a photo, look up a real one of this car while the AI
-    // works. findCarPhoto never throws; no photo just means a plainer card.
+    // If the user didn't upload a photo, store the one the Generate page previewed for this car.
+    // Only a car nobody vetted gets a live search, run while the AI works. findCarPhoto never
+    // throws; no photo just means a plainer card.
+    const vetted = photoPath ? null : vettedPhoto(brand, model, chassis);
     let result;
     let carPhoto = null;
     try {
         [result, carPhoto] = await Promise.all([
             generateBuild({ car, vibe, photo }),
             // Try the exact chassis first, then the model in general.
-            photoPath ? null : findCarPhoto(chassis ? [`${baseName} ${chassis}`, baseName] : [baseName]),
+            vetted === undefined ? findCarPhoto(chassis ? [`${baseName} ${chassis}`, baseName] : [baseName]) : vetted,
         ]);
     } catch (error) {
         return { error: error.message };
@@ -252,4 +269,124 @@ export async function deleteBuild(buildId) {
     revalidatePath('/');
     revalidatePath('/dashboard');
     return { ok: true };
+}
+
+
+// Editing the list of parts ------------------------------------------------------
+// The owner can take parts off the AI's list and put their own on (see components/ModEditor.js).
+// Clients have no UPDATE privilege on `mods`: the change goes through the edit_build_mods()
+// function from supabase/assignment4_edit.sql, which re-checks that the caller owns the build.
+
+// The caller's own build, with what an edit needs: { build } or { error }.
+async function loadOwnBuild(supabase, user, buildId) {
+    if (!isUuid(buildId)) return { error: 'That build does not exist.' };
+    const { data: build, error } = await supabase
+        .from('builds')
+        .select('id, user_id, mods, est_cost_usd')
+        .eq('id', buildId)
+        .maybeSingle();
+    if (error) {
+        console.error('Could not load the build for editing:', error.message);
+        return { error: 'Could not load that build. Please try again.' };
+    }
+    if (!build || build.user_id !== user.id) return { error: 'You can only edit your own builds.' };
+    return { build: { ...build, mods: Array.isArray(build.mods) ? build.mods : [] } };
+}
+
+function editError(error) {
+    console.error('Could not save the parts list:', error.message);
+    // PGRST202: Supabase does not know the function, so supabase/assignment4_edit.sql has not been run.
+    if (error.code === 'PGRST202') return 'Editing parts is not switched on for this site yet.';
+    return 'Could not save your change. Please try again.';
+}
+
+function refreshBuild(buildId) {
+    revalidatePath('/');
+    revalidatePath('/dashboard');
+    revalidatePath(`/builds/${buildId}`);
+}
+
+async function saveMods(supabase, buildId, mods, total, extra = {}) {
+    const { error } = await supabase.rpc('edit_build_mods', { p_build_id: buildId, p_mods: mods, p_cost: total });
+    if (error) return { error: editError(error) };
+    refreshBuild(buildId);
+    return { mods, est_cost_usd: total, ...extra };
+}
+
+// Takes one part off the list. `part` must be the name at `index`, so a page that has gone out of
+// date can never remove a different part. Returns { mods, est_cost_usd, removed } or { error }.
+// `removed` is the part that was taken off, with its cost filled in, so Undo can put it back with
+// the total it had (a build made before parts were priced one by one only has a total, and the
+// part gets an even share of it).
+export async function removeMod(buildId, index, part) {
+    let user;
+    try {
+        user = await requireMember();
+    } catch (error) {
+        return { error: error.message };
+    }
+    if (!Number.isInteger(index) || typeof part !== 'string') return { error: 'Invalid request.' };
+
+    const supabase = await createClient();
+    const loaded = await loadOwnBuild(supabase, user, buildId);
+    if (loaded.error) return loaded;
+    const { build } = loaded;
+
+    if (build.mods[index]?.part !== part) return { error: 'The list has changed. Refresh the page and try again.' };
+    if (build.mods.length <= 1) return { error: 'A build needs at least one part. Add another before taking this one off.' };
+
+    const mods = build.mods.filter((_, i) => i !== index);
+    const removed = { ...build.mods[index] };
+    const share = shareOfTotal(build.mods, build.est_cost_usd, index);
+    if (!Number.isFinite(removed.cost_usd) && share !== null) removed.cost_usd = share;
+    return saveMods(supabase, build.id, mods, totalWithout(build.mods, build.est_cost_usd, index), { removed });
+}
+
+// Puts a part on the list (at `index`, or at the end). Used for parts found with the part search,
+// and to bring back a part that was just taken off. Returns { mods, est_cost_usd } or { error }.
+export async function addMod(buildId, mod, index) {
+    let user;
+    try {
+        user = await requireMember();
+    } catch (error) {
+        return { error: error.message };
+    }
+
+    const clean = cleanMod(mod);
+    if (!clean) return { error: 'Give the part a name.' };
+
+    const supabase = await createClient();
+    const loaded = await loadOwnBuild(supabase, user, buildId);
+    if (loaded.error) return loaded;
+    const { build } = loaded;
+
+    if (build.mods.length >= MAX_MODS) return { error: `A build can have up to ${MAX_MODS} parts. Take one off to add another.` };
+    if (build.mods.some((existing) => partKey(existing.part) === partKey(clean.part))) {
+        return { error: 'That part is already on your list.' };
+    }
+
+    const at = Number.isInteger(index) && index >= 0 && index <= build.mods.length ? index : build.mods.length;
+    const mods = [...build.mods.slice(0, at), clean, ...build.mods.slice(at)];
+    return saveMods(supabase, build.id, mods, totalWith(build.mods, build.est_cost_usd, clean));
+}
+
+// Puts the list back exactly as the AI wrote it (the database keeps that copy from the first edit).
+export async function resetMods(buildId) {
+    let user;
+    try {
+        user = await requireMember();
+    } catch (error) {
+        return { error: error.message };
+    }
+
+    const supabase = await createClient();
+    const loaded = await loadOwnBuild(supabase, user, buildId);
+    if (loaded.error) return loaded;
+
+    const { error } = await supabase.rpc('reset_build_mods', { p_build_id: loaded.build.id });
+    if (error) return { error: error.message.includes('nothing to reset') ? 'This list is still the one the AI wrote.' : editError(error) };
+
+    const { data } = await supabase.from('builds').select('mods, est_cost_usd').eq('id', loaded.build.id).maybeSingle();
+    refreshBuild(loaded.build.id);
+    return { mods: data?.mods ?? [], est_cost_usd: data?.est_cost_usd ?? null };
 }
