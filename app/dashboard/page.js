@@ -28,11 +28,11 @@ export default async function DashboardPage() {
 
     return (
         <div className="page">
-            <div className="container stack">
+            <div className="container container--wide stack">
                 <div className="card profile-card">
                     <Avatar url={profile.avatar_url} name={name} size={64} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                        <h1 style={{ fontSize: '1.5rem' }}>Welcome back, {profile.first_name}!</h1>
+                        <h1>Welcome back, {profile.first_name}!</h1>
                         <p className="muted small">{user.email} · Member since {memberSince}</p>
                     </div>
                     <Link href="/profile" className="btn btn--sm">Edit profile</Link>
@@ -65,7 +65,7 @@ export default async function DashboardPage() {
                         <Link href="/generate" className="btn btn--primary">Generate your first build →</Link>
                     </div>
                 ) : (
-                    <div className="stack">
+                    <div className="feed">
                         {builds.map((build) => (
                             <BuildCard key={build.id} build={build} currentUserId={user.id} />
                         ))}

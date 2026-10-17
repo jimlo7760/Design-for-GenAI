@@ -119,6 +119,9 @@ export default function BuildCard({ build, currentUserId, detailed = false, deck
 
                 {isOwner && !deck && !build.render_url && <RenderButton buildId={build.id} />}
 
+                {/* Pushes the footer to the bottom, so cards side by side in the feed line up. */}
+                <div className="build__spacer" aria-hidden="true" />
+
                 <div className="build__footer">
                     <div className="byline">
                         <Avatar url={build.profiles?.avatar_url} name={creator} size={28} />

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Icon from './Icon';
 
 // Copies this page's link (or opens the phone's share sheet) so people can get votes.
 export default function ShareButton({ title }) {
@@ -24,7 +25,7 @@ export default function ShareButton({ title }) {
 
     return (
         <span className="row" style={{ gap: '0.6rem' }}>
-            <button type="button" className="btn btn--sm" onClick={share}>🔗 Share this build</button>
+            <button type="button" className="btn btn--sm" onClick={share}><Icon name="link" size={16} /> Share this build</button>
             <span role="status" className="small muted">{status}</span>
         </span>
     );

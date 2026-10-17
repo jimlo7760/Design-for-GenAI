@@ -31,7 +31,7 @@ export default async function Home({ searchParams }) {
 
     return (
         <div className="page">
-            <div className="container stack">
+            <div className="container container--wide stack">
                 <div className="page-head" style={{ marginBottom: 0 }}>
                     <div>
                         <h1>Vote on AI-designed car builds</h1>
@@ -78,7 +78,7 @@ export default async function Home({ searchParams }) {
                         <Link href="/generate" className="btn btn--primary">Generate a build →</Link>
                     </div>
                 ) : (
-                    <div className="stack">
+                    <div className="feed">
                         {builds.map((build) => (
                             <BuildCard key={build.id} build={build} currentUserId={user.id} />
                         ))}

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Avatar from './Avatar';
 import NavLinks from './NavLinks';
+import WheelMark from './WheelMark';
 import { fullName } from '../lib/auth';
 
 // Logged-out visitors only see the app name; the links and account menu appear after login.
@@ -9,10 +10,10 @@ export default function Header({ user, profile }) {
 
     return (
         <header className="site-header">
-            <div className="container site-header__inner">
+            <div className="container container--wide site-header__inner">
                 <Link href="/" className="brand">
-                    <span className="brand__mark" aria-hidden="true">M</span>
-                    Mod Squad
+                    <WheelMark className="brand__wheel" />
+                    <span className="brand__word">Mod <span className="brand__accent">Squad</span></span>
                 </Link>
 
                 {user && <NavLinks />}
